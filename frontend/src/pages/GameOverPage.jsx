@@ -45,7 +45,6 @@ export default function GameOverPage() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 320 }}>
         <button className="btn btn-accent" onClick={() => startGame(1)}>PLAY AGAIN</button>
-        <button className="btn" onClick={() => setScreen('leaderboard')}>LEADERBOARD</button>
         <button className="btn btn-ghost" onClick={() => setScreen('menu')}>MENU</button>
       </div>
     </div>

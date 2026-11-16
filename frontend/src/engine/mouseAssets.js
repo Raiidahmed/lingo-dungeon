@@ -62,7 +62,7 @@ export function loadMouseImage(color, displayChar) {
     ? KANA_ROMAJI[displayChar]
     : null;
   const suffix = romaji || 'base';
-  const path = `/mice/${folder}/${folder}_mouse_${suffix}.png`;
+  const path = `${import.meta.env.BASE_URL}mice/${folder}/${folder}_mouse_${suffix}.png`;
 
   if (!_cache.has(path)) {
     const img = new Image();

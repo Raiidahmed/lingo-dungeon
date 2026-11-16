@@ -8,54 +8,54 @@ let textureVersion = 0;
 
 const TEXTURE_SETS = {
   garden: {
-    floor: ['/environment/px_garden_floor.png'],
-    wall: ['/environment/px_garden_wall.png'],
-    rug: ['/environment/px_garden_accent.png'],
+    floor: ['environment/px_garden_floor.png'],
+    wall: ['environment/px_garden_wall.png'],
+    rug: ['environment/px_garden_accent.png'],
   },
   dojo: {
-    floor: ['/environment/px_dojo_floor.png'],
-    wall: ['/environment/px_dojo_wall.png'],
-    rug: ['/environment/px_dojo_accent.png'],
+    floor: ['environment/px_dojo_floor.png'],
+    wall: ['environment/px_dojo_wall.png'],
+    rug: ['environment/px_dojo_accent.png'],
   },
   grove: {
-    floor: ['/environment/px_grove_floor.png'],
-    wall: ['/environment/px_grove_wall.png'],
-    rug: ['/environment/px_grove_accent.png'],
+    floor: ['environment/px_grove_floor.png'],
+    wall: ['environment/px_grove_wall.png'],
+    rug: ['environment/px_grove_accent.png'],
   },
   temple: {
-    floor: ['/environment/px_temple_floor.png'],
-    wall: ['/environment/px_temple_wall.png'],
-    rug: ['/environment/px_temple_accent.png'],
+    floor: ['environment/px_temple_floor.png'],
+    wall: ['environment/px_temple_wall.png'],
+    rug: ['environment/px_temple_accent.png'],
   },
   forest: {
-    floor: ['/environment/px_forest_floor.png'],
-    wall: ['/environment/px_forest_wall.png'],
-    rug: ['/environment/px_forest_accent.png'],
+    floor: ['environment/px_forest_floor.png'],
+    wall: ['environment/px_forest_wall.png'],
+    rug: ['environment/px_forest_accent.png'],
   },
   onsen: {
-    floor: ['/environment/px_onsen_floor.png'],
-    wall: ['/environment/px_onsen_wall.png'],
-    rug: ['/environment/px_onsen_accent.png'],
+    floor: ['environment/px_onsen_floor.png'],
+    wall: ['environment/px_onsen_wall.png'],
+    rug: ['environment/px_onsen_accent.png'],
   },
   market: {
-    floor: ['/environment/px_market_floor.png'],
-    wall: ['/environment/px_market_wall.png'],
-    rug: ['/environment/px_market_accent.png'],
+    floor: ['environment/px_market_floor.png'],
+    wall: ['environment/px_market_wall.png'],
+    rug: ['environment/px_market_accent.png'],
   },
   river: {
-    floor: ['/environment/px_river_floor.png'],
-    wall: ['/environment/px_river_wall.png'],
-    rug: ['/environment/px_river_accent.png'],
+    floor: ['environment/px_river_floor.png'],
+    wall: ['environment/px_river_wall.png'],
+    rug: ['environment/px_river_accent.png'],
   },
   gate: {
-    floor: ['/environment/px_gate_floor.png'],
-    wall: ['/environment/px_gate_wall.png'],
-    rug: ['/environment/px_gate_accent.png'],
+    floor: ['environment/px_gate_floor.png'],
+    wall: ['environment/px_gate_wall.png'],
+    rug: ['environment/px_gate_accent.png'],
   },
   review: {
-    floor: ['/environment/px_review_floor.png'],
-    wall: ['/environment/px_review_wall.png'],
-    rug: ['/environment/px_review_accent.png'],
+    floor: ['environment/px_review_floor.png'],
+    wall: ['environment/px_review_wall.png'],
+    rug: ['environment/px_review_accent.png'],
   },
 };
 
@@ -66,7 +66,7 @@ function loadTexture(path) {
   if (!textureCache.has(path)) {
     const img = new Image();
     img.onload = () => { textureVersion += 1; };
-    img.src = path;
+    img.src = import.meta.env.BASE_URL + path;
     textureCache.set(path, img);
   }
   return textureCache.get(path);

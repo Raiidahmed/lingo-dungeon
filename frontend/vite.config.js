@@ -3,12 +3,8 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/',
+  // Relative base so the build works at lingodungeon.com/ and at raiidahmed.github.io/lingo_pkmn/
+  base: './',
   build: { outDir: 'dist', emptyOutDir: true, target: 'es2020' },
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': 'http://127.0.0.1:5001',
-    },
-  },
+  server: { port: 5173 },
 })

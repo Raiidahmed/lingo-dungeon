@@ -42,12 +42,7 @@ export default function LoginPage() {
     setWiping(true);
     setWipeMsg('');
     try {
-      const res = await fetch('/api/debug/wipe-scores', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirm: 'WIPE' }),
-      });
-      const data = await res.json();
+      const data = await api.wipeProgress();
       setWipeMsg(data.message || 'Done.');
     } catch {
       setWipeMsg('Error wiping.');

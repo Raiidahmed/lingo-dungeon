@@ -3,7 +3,6 @@ import { useStore } from './store.js';
 import { api } from './api.js';
 import LoginPage from './pages/LoginPage.jsx';
 import MenuPage from './pages/MenuPage.jsx';
-import LeaderboardPage from './pages/LeaderboardPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 import GamePage from './pages/GamePage.jsx';
 import GameOverPage from './pages/GameOverPage.jsx';
@@ -36,7 +35,6 @@ export default function App() {
     <>
       {screen === 'login'       && <LoginPage />}
       {screen === 'menu'        && <MenuPage />}
-      {screen === 'leaderboard' && <LeaderboardPage />}
       {screen === 'settings'    && <SettingsPage />}
       {screen === 'status'      && <StatusPage />}
       {screen === 'game'        && <GamePage />}

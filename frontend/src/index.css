@@ -523,28 +523,6 @@ canvas#dungeon {
 .choice-btn.correct { border-color: var(--green); background: rgba(34,204,102,0.15); color: var(--text); }
 .choice-btn.wrong { border-color: var(--red-flash); background: rgba(255,51,85,0.15); color: var(--text); }
 
-/* Leaderboard */
-.lb-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border-col);
-  font-size: 8px;
-}
-.lb-rank { color: var(--text-dim); width: 20px; text-align: right; }
-.lb-name { flex: 1; color: var(--text); }
-.lb-score { color: var(--text); }
-.lb-row.me .lb-name { color: var(--text); }
-.lb-row.me::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  flex-shrink: 0;
-}
-
 /* Word bank */
 .word-row {
   display: flex;

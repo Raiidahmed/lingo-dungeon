@@ -41,7 +41,6 @@ export default function MenuPage() {
         <button className={`btn${hasResume ? '' : ' btn-accent'}`} onClick={() => setScreen('status')}>
           {hasResume ? 'NEW GAME / LEVELS' : '▶ PLAY'}
         </button>
-        <button className="btn" onClick={() => setScreen('leaderboard')}>🏆 LEADERBOARD</button>
         <button className="btn" onClick={() => setScreen('settings')}>⚙ SETTINGS</button>
         <div className="spacer" />
         <button className="btn btn-ghost" onClick={logout}>LOGOUT</button>
