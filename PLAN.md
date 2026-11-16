@@ -1,3 +1,3 @@
 # Plans
 
-- [Run Lingo Dungeon on GitHub Pages](docs/plans/github-pages.md) — built and tested; push and DNS pending
+- [Run Lingo Dungeon on GitHub Pages](docs/plans/github-pages.md) — live at lingo-dungeon.com; HTTPS pending

@@ -1,8 +1,8 @@
 # Plan: Run Lingo Dungeon on GitHub Pages
 
-Goal: make the game work as a purely static site (no Flask, no SQLite, no droplet) and publish it on GitHub Pages at lingodungeon.com.
+Goal: make the game work as a purely static site (no Flask, no SQLite, no droplet) and publish it on GitHub Pages at lingo-dungeon.com.
 
-Status: **code done and tested on the `github-pages` branch; not yet committed or pushed.** The remaining steps (push, repo Pages settings, Wix DNS) are in [Remaining steps](#remaining-steps).
+Status: **live.** Deployed from `main` by `.github/workflows/pages.yml`, and served at lingo-dungeon.com since 2026-11-16. See [Rollout](#rollout) for what was done and what's left.
 
 ---
 
@@ -10,7 +10,7 @@ Status: **code done and tested on the `github-pages` branch; not yet committed o
 
 1. **Leaderboard:** removed.
 2. **Name screen:** kept, as local profiles. Each name has its own progress in the browser. LOGOUT returns to the name screen.
-3. **Web address:** lingodungeon.com, using DNS records in Wix. The build also works at `raiidahmed.github.io/lingo_pkmn/`.
+3. **Web address:** lingo-dungeon.com (with the hyphen), using DNS records in Squarespace. The build also works at `raiidahmed.github.io/lingo_pkmn/`, which now redirects to the domain.
 4. **Flask backend:** deleted from the branch. The previous version is tagged `flask-backend`.
 
 ---
@@ -74,17 +74,28 @@ Status: **code done and tested on the `github-pages` branch; not yet committed o
 
 ---
 
-## Remaining steps
+## Rollout
 
-1. **Commit, push the branch and the `flask-backend` tag.** Needs your OK.
-2. **Switch the repo's Pages source** from "main branch, root" (legacy, serving raw repo files) to "GitHub Actions". Needs your OK. If my token lacks permission, do it in Settings → Pages → Build and deployment → Source.
-3. **Merge `github-pages` into `main` and push.** That triggers the first deploy. Check `https://raiidahmed.github.io/lingo_pkmn/`.
-4. **Set the custom domain** to `lingodungeon.com` in Settings → Pages. After this, the github.io address redirects to lingodungeon.com.
-5. **Change DNS in Wix** (you): Domains → ⋯ (Domain Actions) next to lingodungeon.com → Manage DNS Records.
-   - **A (Host)** for the root domain, four records: `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`. Delete the existing Wix A records.
-   - **CNAME (Aliases)**: set `www` to `raiidahmed.github.io`, replacing the current one that points at Wix.
-   - Don't leave any other A, AAAA or CNAME records on the root or `www`, or GitHub's HTTPS certificate may not be issued.
-6. **Once DNS has updated** (often within an hour; Wix says up to 72), tick "Enforce HTTPS" in Settings → Pages. Then repeat the play-through on lingodungeon.com.
+Done on 2026-11-16:
+1. Pushed the `github-pages` branch and the `flask-backend` tag.
+2. Switched the repo's Pages source from "main branch, root" (legacy, which served raw repo files) to "GitHub Actions".
+3. Fast-forwarded `main` to the branch. The first deploy succeeded, and the same play-through passed on `raiidahmed.github.io/lingo_pkmn/`.
+4. Set the Pages custom domain to `lingo-dungeon.com`.
+5. Changed DNS in Squarespace (Domains → lingo-dungeon.com → DNS → DNS Settings). The domain was already on Squarespace nameservers.
+
+   | Name | Type | Data |
+   |---|---|---|
+   | `@` | A | `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` (four records) |
+   | `www` | CNAME | `raiidahmed.github.io` |
+
+   These replaced `@` A → `142.93.115.77` (the old droplet) and `www` CNAME → `lingo-dungeon.com`.
+6. The play-through passed on `http://lingo-dungeon.com/`.
+
+Left to do:
+- Turn on "Enforce HTTPS" once GitHub issues the certificate (Settings → Pages).
+- Delete the old droplet in DigitalOcean if it still exists. It still accepts connections at `142.93.115.77`, but doesn't serve the game.
+
+Note: `lingodungeon.com` (no hyphen) is a different registration that points at Wix. It isn't ours.
 
 ## Out of scope (unless you want them)
 - Renaming leftover "Lingo SMT" text (page title, menu header) to "Lingo Dungeon".
