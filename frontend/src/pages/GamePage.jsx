@@ -42,10 +42,9 @@ export default function GamePage() {
   const [levelName,    setLevelName]    = useState('');
   const [levelN,       setLevelN]       = useState(startLevel);
   const [elapsed,      setElapsed]      = useState(0);
-  const [challenge,    setChallenge]    = useState(null);  // { prompt, choices, answer(idx), hint, lockKey, lockType }
-  const [choiceResult, setChoiceResult] = useState(null);  // 'correct'|'wrong'|null
-  const [showHint,     setShowHint]     = useState(false);
-  const [attemptCount, setAttemptCount] = useState(0);
+  const [challenge,    setChallenge]    = useState(null);  // { prompt, choices, answer(idx), hint, reward, lockKey, lockType }
+  const [wrongPicks,   setWrongPicks]   = useState([]);    // choice indexes already tried and wrong
+  const [solved,       setSolved]       = useState(false); // right answer picked; showing the explanation
   const [dialogue,     setDialogue]     = useState(null);  // { npc, lineIndex }
 
   const canvasRef    = useRef(null);
@@ -146,10 +145,16 @@ export default function GamePage() {
     const ch = levelDataRef.current.challenges[lockInfo.challengeId];
     if (!ch) return;
     challengeActiveRef.current = true;
-    setAttemptCount(0);
-    setShowHint(false);
-    setChoiceResult(null);
+    setWrongPicks([]);
+    setSolved(false);
     setChallenge({ ...ch, lockKey: key, lockType: lockInfo.type });
+  }
+
+  function closeChallenge() {
+    challengeActiveRef.current = false;
+    setChallenge(null);
+    setWrongPicks([]);
+    setSolved(false);
   }
 
   // --- NPC interaction ---
@@ -239,57 +244,49 @@ export default function GamePage() {
   }
 
   // --- Challenge answer ---
-  function handleChoice(choiceText, choiceIdx) {
-    if (!challenge || choiceResult) return;
-    const correct = choiceIdx === challenge.answer;
-    setChoiceResult(correct ? 'correct' : 'wrong');
+  // Right: open the lock and show the explanation until the player continues.
+  // Wrong: lose a heart, show the hint, and let them try the remaining choices.
+  function handleChoice(choiceIdx) {
+    if (!challenge || solved || heartsRef.current <= 0) return;
+    if (choiceIdx >= challenge.choices.length || wrongPicks.includes(choiceIdx)) return;
+    const [c, r] = challenge.lockKey.split(',').map(Number);
 
-    choiceTimerRef.current = setTimeout(() => {
-      if (correct) {
-        // Open the tile
-        const [c, r] = challenge.lockKey.split(',').map(Number);
-        gridRef.current[r][c] = challenge.lockType === 'chest' ? TILE.CHEST_O : TILE.DOOR_O;
-        solvedLocksRef.current.add(challenge.lockKey);
-        scoreRef.current += 100;
-        setScore(scoreRef.current);
-        addParticle(c, r, '+100', '#22cc66');
-        // Extract word pair: first quoted = Spanish, second quoted or correct choice = English
-        const rewardMatches = (challenge.reward || '').match(/'([^']+)'|"([^"]+)"/g) || [];
-        const word_es = rewardMatches[0]?.replace(/['"]/g, '') || null;
-        const word_en = rewardMatches[1]?.replace(/['"]/g, '') || challenge.choices[challenge.answer] || null;
-        // Only store if they differ (skip reverse-translation challenges where answer is the Spanish word)
-        if (word_es && word_en && word_es.toLowerCase() !== word_en.toLowerCase() && word_es.length <= 32) {
-          learnedWordsRef.current.push({ word_es, word_en });
-          api.addWords([{ es: word_es, en: word_en }], `Level ${levelRef.current}`)
-            .catch(e => console.warn('addWords', e));
-        }
-        // Auto-save after correct answer
-        api.saveGame(buildSnapshot(), buildStatus()).catch(e => console.warn('saveGame', e));
-      } else {
-        const newCount = attemptCount + 1;
-        setAttemptCount(newCount);
-        if (newCount >= 3) setShowHint(true);
-        scoreRef.current = Math.max(0, scoreRef.current - 25);
-        setScore(scoreRef.current);
-        const [c, r] = challenge.lockKey.split(',').map(Number);
-        addParticle(c, r, '-25', '#ff3355');
-        const newH = heartsRef.current - 1;
-        heartsRef.current = newH;
-        setHearts(newH);
-        if (newH <= 0) {
-          challengeActiveRef.current = false;
-          setChallenge(null);
-          setChoiceResult(null);
-          finishGame(false);
-          return;
-        }
+    if (choiceIdx === challenge.answer) {
+      setSolved(true);
+      gridRef.current[r][c] = challenge.lockType === 'chest' ? TILE.CHEST_O : TILE.DOOR_O;
+      solvedLocksRef.current.add(challenge.lockKey);
+      scoreRef.current += 100;
+      setScore(scoreRef.current);
+      addParticle(c, r, '+100', '#22cc66');
+      // Extract word pair: first quoted = Spanish, second quoted or correct choice = English
+      const rewardMatches = (challenge.reward || '').match(/'([^']+)'|"([^"]+)"/g) || [];
+      const word_es = rewardMatches[0]?.replace(/['"]/g, '') || null;
+      const word_en = rewardMatches[1]?.replace(/['"]/g, '') || challenge.choices[challenge.answer] || null;
+      // Only store if they differ (skip reverse-translation challenges where answer is the Spanish word)
+      if (word_es && word_en && word_es.toLowerCase() !== word_en.toLowerCase() && word_es.length <= 32) {
+        learnedWordsRef.current.push({ word_es, word_en });
+        api.addWords([{ es: word_es, en: word_en }], `Level ${levelRef.current}`)
+          .catch(e => console.warn('addWords', e));
       }
-      challengeActiveRef.current = false;
-      setChallenge(null);
-      setChoiceResult(null);
-      setShowHint(false);
-      setAttemptCount(0);
-    }, 600);
+      // Auto-save after correct answer
+      api.saveGame(buildSnapshot(), buildStatus()).catch(e => console.warn('saveGame', e));
+      return;
+    }
+
+    setWrongPicks(picks => [...picks, choiceIdx]);
+    scoreRef.current = Math.max(0, scoreRef.current - 25);
+    setScore(scoreRef.current);
+    addParticle(c, r, '-25', '#ff3355');
+    const newH = heartsRef.current - 1;
+    heartsRef.current = newH;
+    setHearts(newH);
+    if (newH <= 0) {
+      // Let the last wrong pick register before leaving the level
+      choiceTimerRef.current = setTimeout(() => {
+        closeChallenge();
+        finishGame(false);
+      }, 900);
+    }
   }
 
   // --- Dialogue advance ---
@@ -302,11 +299,35 @@ export default function GamePage() {
       dialogueRef.current = next;
       setDialogue(next);
     } else {
-      dialogueActiveRef.current = false;
-      dialogueRef.current = null;
-      setDialogue(null);
+      closeDialogue();
     }
   }
+
+  function closeDialogue() {
+    dialogueActiveRef.current = false;
+    dialogueRef.current = null;
+    setDialogue(null);
+  }
+
+  // Keys for open modals. The window listener is attached once at mount, so it
+  // calls through this ref to see the current challenge state.
+  const modalKeysRef = useRef(null);
+  modalKeysRef.current = (e) => {
+    // Let a focused button handle its own Enter/Space
+    const onButton = e.target?.tagName === 'BUTTON' && (e.key === 'Enter' || e.key === ' ');
+    if (challenge) {
+      if (/^[1-9]$/.test(e.key)) handleChoice(Number(e.key) - 1);
+      else if (solved && !onButton && (e.key === 'Enter' || e.key === ' ' || e.key === 'e' || e.key === 'E')) closeChallenge();
+      else if (!solved && e.key === 'Escape' && heartsRef.current > 0) closeChallenge();
+      return true;
+    }
+    if (dialogueActiveRef.current) {
+      if (!onButton && (e.key === 'Enter' || e.key === ' ' || e.key === 'e' || e.key === 'E')) advanceDialogue();
+      else if (e.key === 'Escape') closeDialogue();
+      return true;
+    }
+    return false;
+  };
 
   // --- Game over / finish ---
   function finishGame(won) {
@@ -378,13 +399,10 @@ export default function GamePage() {
         e.preventDefault();
         keysRef.current.add(e.key);
       }
-      if ((e.key === 'Enter' || e.key === ' ') && dialogueActiveRef.current) {
-        advanceDialogue();
-      }
+      if (e.repeat) return;
+      if (modalKeysRef.current(e)) return;
       if (e.key === 'e' || e.key === 'E') {
-        if (!challengeActiveRef.current && !dialogueActiveRef.current) {
-          tryTalkNPC(playerRef.current);
-        }
+        tryTalkNPC(playerRef.current);
       }
     }
     function onKeyUp(e) { keysRef.current.delete(e.key); }
@@ -510,8 +528,8 @@ export default function GamePage() {
             <div style={{ fontSize: 9, color: 'var(--text)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
               {challenge.prompt}
             </div>
-            {showHint && (
-              <div style={{ fontSize: 7, color: 'var(--text)', fontStyle: 'italic', borderLeft: '4px solid #c8a020', paddingLeft: 8 }}>
+            {wrongPicks.length > 0 && !solved && challenge.hint && (
+              <div style={{ fontSize: 7, color: 'var(--text)', fontStyle: 'italic', borderLeft: '4px solid #c8a020', paddingLeft: 8, lineHeight: 1.8 }}>
                 💡 {challenge.hint}
               </div>
             )}
@@ -520,19 +538,30 @@ export default function GamePage() {
                 <button
                   key={i}
                   className={`choice-btn${
-                    choiceResult && i === challenge.answer ? ' correct' :
-                    choiceResult === 'wrong' && i !== challenge.answer ? ' wrong' : ''
+                    solved && i === challenge.answer ? ' correct' :
+                    wrongPicks.includes(i) ? ' wrong' : ''
                   }`}
                   style={challenge.choiceStyle === 'hiragana'
                     ? { fontSize: 22, fontFamily: 'var(--font-ja)', padding: '10px 4px' }
                     : undefined}
-                  onClick={() => handleChoice(c, i)}
-                  disabled={!!choiceResult}
+                  onClick={() => handleChoice(i)}
+                  disabled={solved || hearts <= 0 || wrongPicks.includes(i)}
                 >
+                  <span className="choice-key">{i + 1}</span>
                   {c}
                 </button>
               ))}
             </div>
+            {solved ? (
+              <>
+                <div className="challenge-reward">✓ {challenge.reward || 'Correct!'}</div>
+                <button className="btn btn-accent" onClick={closeChallenge}>CONTINUE ▶</button>
+              </>
+            ) : hearts > 0 && (
+              <button className="btn btn-ghost challenge-back" onClick={closeChallenge}>
+                BACK AWAY <span className="key-hint">(ESC)</span>
+              </button>
+            )}
           </div>
         </div>
       )}

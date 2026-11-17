@@ -520,8 +520,33 @@ canvas#dungeon {
   transition: border-color 0.1s, background 0.1s;
 }
 .choice-btn:hover { border-color: var(--accent); }
+.choice-btn:disabled { cursor: default; }
+.choice-btn:disabled:not(.correct):not(.wrong) { opacity: 0.55; }
 .choice-btn.correct { border-color: var(--green); background: rgba(34,204,102,0.15); color: var(--text); }
-.choice-btn.wrong { border-color: var(--red-flash); background: rgba(255,51,85,0.15); color: var(--text); }
+.choice-btn.wrong { border-color: var(--red-flash); background: rgba(255,51,85,0.15); color: var(--text); text-decoration: line-through; }
+
+/* Number shortcuts for choices; only shown where there's a keyboard */
+.choice-key {
+  display: none;
+  margin-right: 6px;
+  font-family: var(--font);
+  font-size: 6px;
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+.key-hint { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .choice-key, .key-hint { display: inline; }
+}
+
+.challenge-reward {
+  font-size: 8px;
+  line-height: 1.8;
+  color: var(--text);
+  border-left: 4px solid var(--green);
+  padding-left: 8px;
+}
+.challenge-back { font-size: 7px; padding: 8px; }
 
 /* Word bank */
 .word-row {
