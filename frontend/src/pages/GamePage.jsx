@@ -3,6 +3,7 @@ import { useStore } from '../store.js';
 import { api } from '../api.js';
 import { loadLevel, tryMove, TILE, MAP_W, MAP_H, getLevelCount, getLevelName } from '../engine/dungeon.js';
 import { preloadMouseImages } from '../engine/mouseAssets.js';
+import { learnedWord } from '../engine/words.js';
 import { render, getCanvasSize, createRenderCache } from '../engine/renderer.js';
 
 const MAX_HEARTS = 3;
@@ -304,16 +305,12 @@ export default function GamePage() {
       setScore(scoreRef.current);
       setLocks(l => ({ ...l, open: solvedLocksRef.current.size }));
       addParticle(c, r, '+100', '#22cc66');
-      // Extract word pair: first quoted = Spanish, second quoted or correct choice = English
-      const rewardMatches = (challenge.reward || '').match(/'([^']+)'|"([^"]+)"/g) || [];
-      const word_es = rewardMatches[0]?.replace(/['"]/g, '') || null;
-      const word_en = rewardMatches[1]?.replace(/['"]/g, '') || challenge.choices[challenge.answer] || null;
-      // Only store if they differ (skip reverse-translation challenges where answer is the Spanish word)
-      if (word_es && word_en && word_es.toLowerCase() !== word_en.toLowerCase() && word_es.length <= 32) {
-        if (!learnedWordsRef.current.some(w => w.word_es === word_es)) {
-          learnedWordsRef.current.push({ word_es, word_en });
+      const word = learnedWord(challenge);
+      if (word) {
+        if (!learnedWordsRef.current.some(w => w.word_es === word.word_es)) {
+          learnedWordsRef.current.push(word);
         }
-        api.addWords([{ es: word_es, en: word_en }], `Level ${levelRef.current}`)
+        api.addWords([{ es: word.word_es, en: word.word_en }], `Level ${levelRef.current}`)
           .catch(e => console.warn('addWords', e));
       }
       // Auto-save after correct answer
