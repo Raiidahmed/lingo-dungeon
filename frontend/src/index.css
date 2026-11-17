@@ -331,6 +331,10 @@ input.text-input::placeholder { color: var(--text-dim); }
 .hud-level { font-size: 7px; color: var(--text); }
 .hud-score { font-size: 9px; color: var(--text); }
 
+.hud-center { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.hud-locks { font-size: 6px; color: var(--text-dim); }
+.hud-locks.open { color: var(--green); }
+
 .hearts { display: flex; gap: 4px; }
 .heart { font-size: 14px; }
 .heart.empty { opacity: 0.2; }
@@ -340,12 +344,38 @@ input.text-input::placeholder { color: var(--text-dim); }
 
 /* Canvas area */
 .canvas-area {
+  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   padding: 8px;
+}
+
+.toast {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 10px 14px;
+  background: var(--surface);
+  border: var(--border-w) solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 7px;
+  line-height: 1.8;
+  text-align: center;
+  pointer-events: none;
+}
+
+.level-clear-name {
+  font-size: 10px;
+  line-height: 1.6;
+  color: var(--text);
+  text-align: center;
 }
 
 canvas#dungeon {
@@ -552,11 +582,13 @@ canvas#dungeon {
 .word-row {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   padding: 6px 0;
   border-bottom: 1px solid var(--border-col);
   font-size: 8px;
 }
 .word-es { color: var(--text); }
+.word-es.ja { font-family: var(--font-ja); font-size: 14px; }
 .word-en { color: var(--text-dim); }
 
 /* Theme swatches */

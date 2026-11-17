@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store.js';
 import { api } from '../api.js';
-import { loadLevel, tryMove, TILE, MAP_W, MAP_H, getLevelCount } from '../engine/dungeon.js';
+import { loadLevel, tryMove, TILE, MAP_W, MAP_H, getLevelCount, getLevelName } from '../engine/dungeon.js';
 import { preloadMouseImages } from '../engine/mouseAssets.js';
 import { render, getCanvasSize, createRenderCache } from '../engine/renderer.js';
 
 const MAX_HEARTS = 3;
 const MOVE_COOLDOWN = 120;
+const isJapanese = (s) => /[぀-ヿ一-龯]/.test(s);
 
 export default function GamePage() {
   const { startLevel, resumeMode, save, endGame, user, theme, language, lightMode, ui, updateWordBank, setScreen } = useStore();
@@ -20,15 +21,18 @@ export default function GamePage() {
   const scoreRef        = useRef(0);
   const heartsRef       = useRef(MAX_HEARTS);
   const startTimeRef    = useRef(Date.now());
-  const learnedWordsRef = useRef([]);
+  const learnedWordsRef = useRef([]);     // words learned this run (all levels)
+  const levelWordsStartRef = useRef(0);   // index into learnedWordsRef where this level began
   const particlesRef    = useRef([]);
   const keysRef         = useRef(new Set());
   const rafRef          = useRef(null);
   const lastMoveRef     = useRef(0);
   const challengeActiveRef = useRef(false);
   const dialogueActiveRef  = useRef(false);
+  const levelClearRef      = useRef(false);
   const gameOverRef        = useRef(false);
   const choiceTimerRef     = useRef(null);  // cleared on unmount to prevent state updates after teardown
+  const toastTimerRef      = useRef(null);
   const ctxRef             = useRef(null);  // canvas context cached once at mount
   const renderCacheRef     = useRef(createRenderCache());
   const viewRef            = useRef({
@@ -46,6 +50,9 @@ export default function GamePage() {
   const [wrongPicks,   setWrongPicks]   = useState([]);    // choice indexes already tried and wrong
   const [solved,       setSolved]       = useState(false); // right answer picked; showing the explanation
   const [dialogue,     setDialogue]     = useState(null);  // { npc, lineIndex }
+  const [locks,        setLocks]        = useState({ open: 0, total: 0 });
+  const [levelClear,   setLevelClear]   = useState(null);  // { level, name, words, nextN, nextName }
+  const [toast,        setToast]        = useState(null);
 
   const canvasRef    = useRef(null);
   const containerRef = useRef(null);
@@ -62,7 +69,8 @@ export default function GamePage() {
   }, [theme.accent, lightMode, ui?.canvasTint]);
 
   // --- Level loading ---
-  function initLevel(n, snapshot = null) {
+  // carry: advancing within a run, so score and run time continue (hearts refill)
+  function initLevel(n, snapshot = null, carry = false) {
     const safeLevel = Math.min(Math.max(n, 1), getLevelCount(language));
     const data = loadLevel(safeLevel, language);
     levelDataRef.current = data;
@@ -90,22 +98,32 @@ export default function GamePage() {
       setScore(snapshot.score);
     } else {
       playerRef.current = { ...data.playerStart };
-      scoreRef.current  = 0;
       heartsRef.current = MAX_HEARTS;
-      startTimeRef.current = Date.now();
       setHearts(MAX_HEARTS);
-      setScore(0);
+      if (!carry) {
+        scoreRef.current = 0;
+        startTimeRef.current = Date.now();
+        setScore(0);
+      }
     }
 
     levelRef.current = safeLevel;
+    levelWordsStartRef.current = learnedWordsRef.current.length;
     setLevelN(safeLevel);
     setLevelName(data.name);
+    setLocks({ open: solvedLocksRef.current.size, total: data.numLocks });
 
     if (language === 'ja') preloadMouseImages(data.challenges);
   }
 
   function isExitOpen() {
     return solvedLocksRef.current.size >= levelDataRef.current.numLocks;
+  }
+
+  function showToast(text) {
+    setToast(text);
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 1800);
   }
 
   function addParticle(col, row, text, color) {
@@ -187,7 +205,7 @@ export default function GamePage() {
   function applyMove(dx, dy) {
     const now = performance.now();
     if (now - lastMoveRef.current < MOVE_COOLDOWN) return;
-    if (challengeActiveRef.current || dialogueActiveRef.current) return;
+    if (challengeActiveRef.current || dialogueActiveRef.current || levelClearRef.current) return;
 
     const target = {
       col: playerRef.current.col + dx,
@@ -209,6 +227,13 @@ export default function GamePage() {
       return;
     }
 
+    if (targetTile === TILE.STAIRS && !isExitOpen()) {
+      const { size } = solvedLocksRef.current;
+      showToast(`The stairs are sealed. Open every lock first (${size}/${levelDataRef.current.numLocks}).`);
+      lastMoveRef.current = now;
+      return;
+    }
+
     const newPos = tryMove(gridRef.current, playerRef.current, dx, dy, isExitOpen());
     if (newPos.col === playerRef.current.col && newPos.row === playerRef.current.row) return;
     playerRef.current = newPos;
@@ -225,11 +250,25 @@ export default function GamePage() {
       if (nextN > getLevelCount(language)) {
         finishGame(true);
       } else {
-        learnedWordsRef.current = [];
-        api.saveGame(null, {}).catch(e => console.warn('saveGame', e));
-        initLevel(nextN);
+        const clear = {
+          level: completedLevel,
+          name: levelDataRef.current.name,
+          words: learnedWordsRef.current.slice(levelWordsStartRef.current),
+          nextN,
+          nextName: getLevelName(nextN, language),
+        };
+        // Load the next level behind the card and save it, so quitting here keeps the progress
+        initLevel(nextN, null, true);
+        api.saveGame(buildSnapshot(), buildStatus()).catch(e => console.warn('saveGame', e));
+        levelClearRef.current = true;
+        setLevelClear(clear);
       }
     }
+  }
+
+  function closeLevelClear() {
+    levelClearRef.current = false;
+    setLevelClear(null);
   }
 
   // --- Input processing (keyboard polling, runs every RAF tick) ---
@@ -257,6 +296,7 @@ export default function GamePage() {
       solvedLocksRef.current.add(challenge.lockKey);
       scoreRef.current += 100;
       setScore(scoreRef.current);
+      setLocks(l => ({ ...l, open: solvedLocksRef.current.size }));
       addParticle(c, r, '+100', '#22cc66');
       // Extract word pair: first quoted = Spanish, second quoted or correct choice = English
       const rewardMatches = (challenge.reward || '').match(/'([^']+)'|"([^"]+)"/g) || [];
@@ -264,7 +304,9 @@ export default function GamePage() {
       const word_en = rewardMatches[1]?.replace(/['"]/g, '') || challenge.choices[challenge.answer] || null;
       // Only store if they differ (skip reverse-translation challenges where answer is the Spanish word)
       if (word_es && word_en && word_es.toLowerCase() !== word_en.toLowerCase() && word_es.length <= 32) {
-        learnedWordsRef.current.push({ word_es, word_en });
+        if (!learnedWordsRef.current.some(w => w.word_es === word_es)) {
+          learnedWordsRef.current.push({ word_es, word_en });
+        }
         api.addWords([{ es: word_es, en: word_en }], `Level ${levelRef.current}`)
           .catch(e => console.warn('addWords', e));
       }
@@ -315,6 +357,10 @@ export default function GamePage() {
   modalKeysRef.current = (e) => {
     // Let a focused button handle its own Enter/Space
     const onButton = e.target?.tagName === 'BUTTON' && (e.key === 'Enter' || e.key === ' ');
+    if (levelClearRef.current) {
+      if (!onButton && (e.key === 'Enter' || e.key === ' ' || e.key === 'e' || e.key === 'E')) closeLevelClear();
+      return true;
+    }
     if (challenge) {
       if (/^[1-9]$/.test(e.key)) handleChoice(Number(e.key) - 1);
       else if (solved && !onButton && (e.key === 'Enter' || e.key === ' ' || e.key === 'e' || e.key === 'E')) closeChallenge();
@@ -373,8 +419,8 @@ export default function GamePage() {
   // --- Mount ---
   useEffect(() => {
     const snapshot = (resumeMode && save?.snapshot) ? save.snapshot : null;
-    initLevel(resumeMode && snapshot ? snapshot.levelIndex : startLevel, snapshot);
     learnedWordsRef.current = [];
+    initLevel(resumeMode && snapshot ? snapshot.levelIndex : startLevel, snapshot);
     gameOverRef.current = false;
 
     // Cache canvas context — valid for the lifetime of this canvas element
@@ -421,6 +467,7 @@ export default function GamePage() {
     return () => {
       cancelAnimationFrame(rafRef.current);
       clearTimeout(choiceTimerRef.current);
+      clearTimeout(toastTimerRef.current);
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
       window.removeEventListener('resize', scaleCanvas);
@@ -440,10 +487,15 @@ export default function GamePage() {
           <div className="hud-level">{levelName || `LEVEL ${levelN}`}</div>
           <div className="hud-score">{score} XP</div>
         </div>
-        <div className="hearts">
-          {Array.from({ length: MAX_HEARTS }).map((_, i) => (
-            <span key={i} className={`heart${i >= hearts ? ' empty' : ''}`}>♥</span>
-          ))}
+        <div className="hud-center">
+          <div className="hearts">
+            {Array.from({ length: MAX_HEARTS }).map((_, i) => (
+              <span key={i} className={`heart${i >= hearts ? ' empty' : ''}`}>♥</span>
+            ))}
+          </div>
+          <div className={`hud-locks${locks.open >= locks.total ? ' open' : ''}`}>
+            {locks.open >= locks.total ? 'STAIRS OPEN' : `LOCKS ${locks.open}/${locks.total}`}
+          </div>
         </div>
         <div className="hud-right">
           <div className="hud-timer">{fmtTime(elapsed)}</div>
@@ -463,6 +515,7 @@ export default function GamePage() {
       {/* Canvas */}
       <div className="canvas-area" ref={containerRef}>
         <canvas id="dungeon" ref={canvasRef} />
+        {toast && <div className="toast">{toast}</div>}
       </div>
 
       {/* Controls — dpad left, action button right */}
@@ -504,6 +557,42 @@ export default function GamePage() {
             </div>
             <button className="btn btn-accent" onClick={advanceDialogue}>
               {dialogue.lineIndex + 1 < dialogue.npc.dialogue.length ? 'Next ▶' : 'Close ✕'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Level clear card — the next level is already loaded behind it */}
+      {levelClear && (
+        <div className="challenge-overlay">
+          <div className="challenge-box">
+            <div className="challenge-label">★ LEVEL {levelClear.level} CLEAR ★</div>
+            <div className="level-clear-name">{levelClear.name}</div>
+            <div className="stat-row">
+              <span className="stat-label">STAIRS BONUS</span>
+              <span className="stat-value">+200 XP</span>
+            </div>
+            <div className="stat-row">
+              <span className="stat-label">RUN TOTAL</span>
+              <span className="stat-value">{score} XP</span>
+            </div>
+            {levelClear.words.length > 0 && (
+              <div>
+                <div className="stat-label" style={{ marginBottom: 6 }}>NEW WORDS</div>
+                {levelClear.words.slice(0, 8).map((w, i) => (
+                  <div key={i} className="word-row">
+                    <span className={`word-es${isJapanese(w.word_es) ? ' ja' : ''}`}>{w.word_es}</span>
+                    <span className="word-en">{w.word_en}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ fontSize: 7, color: 'var(--text-dim)', lineHeight: 1.8 }}>
+              NEXT: {levelClear.nextN}. {levelClear.nextName}
+              <br />Hearts refilled.
+            </div>
+            <button className="btn btn-accent" onClick={closeLevelClear}>
+              CONTINUE ▶ <span className="key-hint">(ENTER)</span>
             </button>
           </div>
         </div>
