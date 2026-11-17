@@ -2,7 +2,7 @@
 set -e
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
-echo "=== Starting Lingo SMT ==="
+echo "=== Starting Lingo Dungeon ==="
 
 cd "$ROOT/frontend"
 if [ ! -d node_modules ]; then

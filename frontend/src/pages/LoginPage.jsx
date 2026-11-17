@@ -59,7 +59,7 @@ export default function LoginPage() {
         style={{ userSelect: 'none', cursor: 'default' }}
       >LINGO</div>
       <div className="page-title" style={{ fontSize: 14, color: 'var(--text)' }}>DUNGEON</div>
-      <div className="subtitle" style={{ marginBottom: 24 }}>Learn Spanish. Survive the dungeon.</div>
+      <div className="subtitle" style={{ marginBottom: 24 }}>Learn Japanese and Spanish. Survive the dungeon.</div>
 
       <div className="card" style={{ maxWidth: 320 }}>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -81,7 +81,7 @@ export default function LoginPage() {
         </form>
       </div>
 
-      <div className="subtitle">Spanish • English • Adventure</div>
+      <div className="subtitle">Hiragana • Spanish • Adventure</div>
 
       {debugVisible && (
         <div className="card" style={{ maxWidth: 320, borderColor: '#ff3355', marginTop: 16 }}>

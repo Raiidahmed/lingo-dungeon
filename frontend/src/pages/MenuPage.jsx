@@ -13,7 +13,7 @@ export default function MenuPage() {
 
   return (
     <div className="page">
-      <div className="page-title">LINGO SMT</div>
+      <div className="page-title">LINGO DUNGEON</div>
       <div className="subtitle">Welcome, {user?.username ?? '?'}</div>
 
       <div className="card" style={{ textAlign: 'center' }}>
@@ -24,7 +24,7 @@ export default function MenuPage() {
           <div style={{ marginTop: 12, maxHeight: 100, overflowY: 'auto' }}>
             {user.word_bank.slice(0, 6).map(w => (
               <div key={w.word_es} className="word-row">
-                <span className="word-es">{w.word_es}</span>
+                <span className={`word-es${/[\u3040-\u30ff\u4e00-\u9faf]/.test(w.word_es) ? ' ja' : ''}`}>{w.word_es}</span>
                 <span className="word-en">{w.word_en}</span>
               </div>
             ))}
