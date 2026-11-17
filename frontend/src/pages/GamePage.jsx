@@ -7,6 +7,7 @@ import { render, getCanvasSize, createRenderCache } from '../engine/renderer.js'
 
 const MAX_HEARTS = 3;
 const MOVE_COOLDOWN = 120;
+const HOLD_DELAY = 250;  // ms a D-pad button must be held before it starts repeating
 const isJapanese = (s) => /[぀-ヿ一-龯]/.test(s);
 
 export default function GamePage() {
@@ -25,6 +26,7 @@ export default function GamePage() {
   const levelWordsStartRef = useRef(0);   // index into learnedWordsRef where this level began
   const particlesRef    = useRef([]);
   const keysRef         = useRef(new Set());
+  const heldDirRef      = useRef(null);   // { dx, dy, since } while a D-pad button is held
   const rafRef          = useRef(null);
   const lastMoveRef     = useRef(0);
   const challengeActiveRef = useRef(false);
@@ -280,6 +282,8 @@ export default function GamePage() {
     if (keysRef.current.has('ArrowRight') || keysRef.current.has('d')) dx =  1;
     if (keysRef.current.has('ArrowUp')    || keysRef.current.has('w')) dy = -1;
     if (keysRef.current.has('ArrowDown')  || keysRef.current.has('s')) dy =  1;
+    const held = heldDirRef.current;
+    if (!dx && !dy && held && performance.now() - held.since > HOLD_DELAY) ({ dx, dy } = held);
     if (!dx && !dy) return;
     applyMove(dx, dy);
   }
@@ -391,9 +395,13 @@ export default function GamePage() {
     endGame({ won, level, language, score: finalScore, time_ms, wordsPassed: learnedWordsRef.current.length });
   }
 
-  // --- D-pad: move exactly once per tap, delegates to shared applyMove ---
-  function moveDir(dx, dy) {
+  // --- D-pad: a tap moves once; holding keeps walking (repeats via processInput) ---
+  function pressDir(dx, dy) {
     applyMove(dx, dy);
+    heldDirRef.current = { dx, dy, since: performance.now() };
+  }
+  function releaseDir() {
+    heldDirRef.current = null;
   }
 
   // --- Render loop ---
@@ -520,14 +528,24 @@ export default function GamePage() {
         {toast && <div className="toast">{toast}</div>}
       </div>
 
+      {/* Keyboard hint — only shown on devices with a mouse/keyboard */}
+      <div className="controls-hint">ARROWS / WASD move · E talk · 1–4 answer · ESC back away</div>
+
       {/* Controls — dpad left, action button right */}
       <div className="controls-bar">
         <div className="dpad">
-          <button className="dpad-btn dpad-up"    onPointerDown={() => moveDir(0,-1)}>▲</button>
-          <button className="dpad-btn dpad-left"  onPointerDown={() => moveDir(-1,0)}>◀</button>
+          {[['dpad-up', 0, -1, '▲'], ['dpad-left', -1, 0, '◀'], ['dpad-right', 1, 0, '▶'], ['dpad-down', 0, 1, '▼']].map(([cls, dx, dy, arrow]) => (
+            <button
+              key={cls}
+              className={`dpad-btn ${cls}`}
+              onPointerDown={() => pressDir(dx, dy)}
+              onPointerUp={releaseDir}
+              onPointerLeave={releaseDir}
+              onPointerCancel={releaseDir}
+              onContextMenu={e => e.preventDefault()}
+            >{arrow}</button>
+          ))}
           <div className="dpad-center" />
-          <button className="dpad-btn dpad-right" onPointerDown={() => moveDir(1,0)}>▶</button>
-          <button className="dpad-btn dpad-down"  onPointerDown={() => moveDir(0,1)}>▼</button>
         </div>
         <button
           className="action-btn"
