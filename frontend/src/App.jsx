@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useStore } from './store.js';
 import { api } from './api.js';
+import { storage } from './storage.js';
 import LoginPage from './pages/LoginPage.jsx';
 import MenuPage from './pages/MenuPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
@@ -21,12 +22,12 @@ export default function App() {
   }, [lightMode]);
 
   useEffect(() => {
-    const token = localStorage.getItem('lingo_token');
+    const token = storage.getItem('lingo_token');
     if (token) {
       api.me().then(data => {
         login(data.user, token, data.save ?? null);
       }).catch(() => {
-        localStorage.removeItem('lingo_token');
+        storage.removeItem('lingo_token');
       });
     }
   }, []);

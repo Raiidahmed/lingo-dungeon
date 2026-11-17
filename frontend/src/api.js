@@ -1,23 +1,25 @@
 // Player data lives in localStorage so the game can be hosted as a static site.
 // Each method mirrors the response shape of the old Flask route it replaced.
 // The "token" kept under lingo_token is just the signed-in profile's key.
+import { storage } from './storage.js';
+
 const PROFILES_KEY = 'lingo_profiles';
 const VALID_THEMES = new Set(['crimson', 'violet', 'teal', 'amber', 'mint', 'sky']);
 
-const getToken = () => localStorage.getItem('lingo_token');
+const getToken = () => storage.getItem('lingo_token');
 
 function loadProfiles() {
   // Null prototype so names like "constructor" or "__proto__" are plain keys.
   const profiles = Object.create(null);
   try {
-    return Object.assign(profiles, JSON.parse(localStorage.getItem(PROFILES_KEY) || '{}'));
+    return Object.assign(profiles, JSON.parse(storage.getItem(PROFILES_KEY) || '{}'));
   } catch {
     return profiles;
   }
 }
 
 function saveProfiles(profiles) {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  storage.setItem(PROFILES_KEY, JSON.stringify(profiles));
 }
 
 function currentProfile(profiles) {

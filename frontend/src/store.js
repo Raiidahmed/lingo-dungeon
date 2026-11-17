@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { THEMES, DEFAULT_THEME, applyTheme, applyRawTheme } from './themes.js';
+import { storage } from './storage.js';
 
 /*
   Build a continuous conic gradient with N evenly-spaced bright peaks.
@@ -115,9 +116,9 @@ export const useStore = create((set, get) => ({
   startLevel: 1,
   resumeMode: false,
   save: null,   // { snapshot, status } from API
-  language: ['ja', 'es'].includes(localStorage.getItem('lingo_language')) ? localStorage.getItem('lingo_language') : 'ja',
-  lightMode: localStorage.getItem('lingo_light_mode') === '1',
-  ui: JSON.parse(localStorage.getItem('lingo_ui') || 'null') || {
+  language: ['ja', 'es'].includes(storage.getItem('lingo_language')) ? storage.getItem('lingo_language') : 'ja',
+  lightMode: storage.getItem('lingo_light_mode') === '1',
+  ui: JSON.parse(storage.getItem('lingo_ui') || 'null') || {
     borderWidth: 1,    // px, 0–8
     radius:      8,    // px, 0–24
     glowSize:    16,   // px, 0–48
@@ -126,26 +127,26 @@ export const useStore = create((set, get) => ({
     shimmer:       0,  // 0–100, animated gradient shimmer on card borders
     shimmerSpeed:  2,  // 0.5–8s, rotation period
     shimmerPulses: 1,  // 1–4, number of bright sweeps per rotation
-    customColors:  JSON.parse(localStorage.getItem('lingo_custom_colors') || '[]'),
+    customColors:  JSON.parse(storage.getItem('lingo_custom_colors') || '[]'),
     fontSize:    1.0,  // 0.75–1.5, page zoom scale
   },
 
   setScreen: (screen) => set({ screen }),
   setLanguage: (language) => {
-    localStorage.setItem('lingo_language', language);
+    storage.setItem('lingo_language', language);
     set({ language });
   },
 
   toggleLightMode: () => set(s => {
     const next = !s.lightMode;
-    localStorage.setItem('lingo_light_mode', next ? '1' : '0');
+    storage.setItem('lingo_light_mode', next ? '1' : '0');
     document.documentElement.classList.toggle('light-mode', next);
     return { lightMode: next };
   }),
 
   setUI: (key, value) => set(s => {
     const next = { ...s.ui, [key]: value };
-    localStorage.setItem('lingo_ui', JSON.stringify(next));
+    storage.setItem('lingo_ui', JSON.stringify(next));
     applyUI(next);
     return { ui: next };
   }),
@@ -157,13 +158,13 @@ export const useStore = create((set, get) => ({
   },
 
   login: (user, token, saveData = null) => {
-    localStorage.setItem('lingo_token', token);
+    storage.setItem('lingo_token', token);
     const theme = applyTheme(user.accent_theme);
     set({ user, sessionToken: token, theme, screen: 'menu', save: saveData });
   },
 
   logout: () => {
-    localStorage.removeItem('lingo_token');
+    storage.removeItem('lingo_token');
     set({ user: null, sessionToken: null, screen: 'login', gameResult: null, save: null });
   },
 
@@ -174,13 +175,13 @@ export const useStore = create((set, get) => ({
 
   addCustomColor: (colorObj) => set(s => {
     const colors = [...(s.ui.customColors || []), colorObj];
-    localStorage.setItem('lingo_custom_colors', JSON.stringify(colors));
+    storage.setItem('lingo_custom_colors', JSON.stringify(colors));
     return { ui: { ...s.ui, customColors: colors } };
   }),
 
   removeCustomColor: (idx) => set(s => {
     const colors = (s.ui.customColors || []).filter((_, i) => i !== idx);
-    localStorage.setItem('lingo_custom_colors', JSON.stringify(colors));
+    storage.setItem('lingo_custom_colors', JSON.stringify(colors));
     return { ui: { ...s.ui, customColors: colors } };
   }),
 
