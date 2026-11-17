@@ -35,6 +35,10 @@ function updateProfile(fn) {
   return { ok: true };
 }
 
+// Completed levels are "lang:n" keys. Older saves stored bare numbers with no
+// language; count those as Spanish, the only course that showed checkmarks.
+const normalizeCompleted = (list) => (list ?? []).map(k => (typeof k === 'number' ? `es:${k}` : k));
+
 function toInt(value, fallback, min) {
   const n = Math.trunc(Number(value));
   return Math.max(min, Number.isFinite(n) ? n : fallback);
@@ -46,7 +50,7 @@ function publicUser(p) {
     username: p.username,
     accent_theme: p.accent_theme,
     word_bank: p.word_bank,
-    levels_completed: p.levels_completed,
+    levels_completed: normalizeCompleted(p.levels_completed),
   };
 }
 
@@ -113,10 +117,11 @@ export const api = {
     p.save = { snapshot: snapshot ?? null, status: status ?? {} };
   }),
 
-  markLevelComplete: async (level) => updateProfile(p => {
-    const n = toInt(level, 1, 1);
-    if (!p.levels_completed.includes(n)) {
-      p.levels_completed = [...p.levels_completed, n].sort((a, b) => a - b);
+  markLevelComplete: async (level, language = 'es') => updateProfile(p => {
+    const key = `${language}:${toInt(level, 1, 1)}`;
+    const done = normalizeCompleted(p.levels_completed);
+    if (!done.includes(key)) {
+      p.levels_completed = [...done, key].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     }
   }),
 

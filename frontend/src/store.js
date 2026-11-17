@@ -115,7 +115,7 @@ export const useStore = create((set, get) => ({
   startLevel: 1,
   resumeMode: false,
   save: null,   // { snapshot, status } from API
-  language: 'ja',
+  language: ['ja', 'es'].includes(localStorage.getItem('lingo_language')) ? localStorage.getItem('lingo_language') : 'ja',
   lightMode: localStorage.getItem('lingo_light_mode') === '1',
   ui: JSON.parse(localStorage.getItem('lingo_ui') || 'null') || {
     borderWidth: 1,    // px, 0–8
@@ -131,7 +131,10 @@ export const useStore = create((set, get) => ({
   },
 
   setScreen: (screen) => set({ screen }),
-  setLanguage: (language) => set({ language }),
+  setLanguage: (language) => {
+    localStorage.setItem('lingo_language', language);
+    set({ language });
+  },
 
   toggleLightMode: () => set(s => {
     const next = !s.lightMode;
@@ -207,8 +210,12 @@ export const useStore = create((set, get) => ({
 
   setSave: (save) => set({ save }),
 
+  // A resumed run plays in the language it was saved in
   startGame: (level = 1, resume = false) =>
-    set({ screen: 'game', startLevel: level, resumeMode: resume, gameResult: null }),
+    set(s => ({
+      screen: 'game', startLevel: level, resumeMode: resume, gameResult: null,
+      language: (resume && s.save?.snapshot?.language) || s.language,
+    })),
 
   endGame: (result) => set({ screen: 'game_over', gameResult: result }),
 }));

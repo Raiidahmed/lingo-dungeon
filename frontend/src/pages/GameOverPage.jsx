@@ -2,8 +2,8 @@ import { useStore } from '../store.js';
 import { getLevelCount } from '../engine/dungeon.js';
 
 export default function GameOverPage() {
-  const { gameResult, startGame, setScreen, language: selectedLanguage } = useStore();
-  const { level, language = selectedLanguage, score, time_ms, wordsPassed } = gameResult ?? {};
+  const { gameResult, startGame, setScreen, setLanguage, language: selectedLanguage } = useStore();
+  const { won, level, language = selectedLanguage, score, time_ms, wordsPassed } = gameResult ?? {};
 
   function fmtTime(ms) {
     if (!ms) return '0:00';
@@ -12,15 +12,19 @@ export default function GameOverPage() {
   }
 
   const levelCount = getLevelCount(language);
-  const isWin = level >= levelCount;
+
+  function play(n) {
+    setLanguage(language);
+    startGame(n);
+  }
 
   return (
     <div className="page" style={{ justifyContent: 'center', minHeight: '100dvh' }}>
       <div className="page-title" style={{ color: 'var(--text)' }}>
-        {isWin ? 'VICTORY!' : 'GAME OVER'}
+        {won ? 'VICTORY!' : 'GAME OVER'}
       </div>
       <div className="subtitle">
-        {isWin ? `You conquered all ${levelCount} levels!` : `You fell on Level ${level}`}
+        {won ? `You conquered all ${levelCount} levels!` : `You fell on Level ${level}`}
       </div>
 
       <div className="card" style={{ width: '100%', maxWidth: 320 }}>
@@ -44,7 +48,10 @@ export default function GameOverPage() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 320 }}>
-        <button className="btn btn-accent" onClick={() => startGame(1)}>PLAY AGAIN</button>
+        {won
+          ? <button className="btn btn-accent" onClick={() => play(1)}>PLAY AGAIN</button>
+          : <button className="btn btn-accent" onClick={() => play(level)}>TRY LEVEL {level} AGAIN</button>}
+        <button className="btn" onClick={() => setScreen('status')}>LEVEL SELECT</button>
         <button className="btn btn-ghost" onClick={() => setScreen('menu')}>MENU</button>
       </div>
     </div>

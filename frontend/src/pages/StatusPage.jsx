@@ -13,6 +13,7 @@ export default function StatusPage() {
   const wordBank = user?.word_bank ?? [];
   const completed = user?.levels_completed ?? [];
   const levelCount = getLevelCount(language);
+  const doneCount = completed.filter(k => k.startsWith(`${language}:`)).length;
 
   const currentLevel = status.levelIndex ?? 1;
   const hasResume = !!snapshot;
@@ -28,6 +29,12 @@ export default function StatusPage() {
         <div className="card-title">CURRENT RUN</div>
         {hasResume ? (
           <>
+            {status.language && (
+              <div className="stat-row">
+                <span className="stat-label">COURSE</span>
+                <span className="stat-value">{LANGUAGES.find(l => l.id === status.language)?.name}</span>
+              </div>
+            )}
             <div className="stat-row">
               <span className="stat-label">LEVEL</span>
               <span className="stat-value">{status.levelName || `Level ${currentLevel}`}</span>
@@ -82,51 +89,36 @@ export default function StatusPage() {
 
       {/* Level selector with completion status */}
       <div className="card">
-        {language === 'es' ? (
-          <>
-            <div className="card-title">LEVELS — {completed.length}/{levelCount} COMPLETED</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {Array.from({ length: levelCount }, (_, i) => i + 1).map(n => {
-                const done = completed.includes(n);
-                return (
-                  <button
-                    key={n}
-                    className="btn"
-                    style={{
-                      padding: '10px 12px',
-                      fontSize: 8,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      borderColor: done ? 'var(--accent)' : undefined,
-                      color: 'var(--text)',
-                    }}
-                    onClick={() => startGame(n, false)}
-                  >
-                    <span>{n}. {getLevelName(n, language)}</span>
-                    <span style={{ fontSize: 10 }}>{done ? '✓' : ''}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        ) : language === 'ja' ? (
-          <>
-            <div className="card-title">LEVELS — JAPANESE ({levelCount})</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {Array.from({ length: levelCount }, (_, i) => i + 1).map(n => (
-                <button
-                  key={n}
-                  className="btn"
-                  style={{ padding: '10px 12px', fontSize: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                  onClick={() => startGame(n, false)}
-                >
-                  <span>{n}.&nbsp;<span style={{ fontFamily: 'var(--font-ja)', fontSize: 13 }}>{getLevelName(n, language)}</span></span>
-                </button>
-              ))}
-            </div>
-          </>
-        ) : null}
+        <div className="card-title">LEVELS — {doneCount}/{levelCount} COMPLETED</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {Array.from({ length: levelCount }, (_, i) => i + 1).map(n => {
+            const done = completed.includes(`${language}:${n}`);
+            return (
+              <button
+                key={n}
+                className="btn"
+                style={{
+                  padding: '10px 12px',
+                  fontSize: 8,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderColor: done ? 'var(--accent)' : undefined,
+                  color: 'var(--text)',
+                }}
+                onClick={() => startGame(n, false)}
+              >
+                <span>
+                  {n}.&nbsp;
+                  {language === 'ja'
+                    ? <span style={{ fontFamily: 'var(--font-ja)', fontSize: 13 }}>{getLevelName(n, language)}</span>
+                    : getLevelName(n, language)}
+                </span>
+                <span style={{ fontSize: 10 }}>{done ? '✓' : ''}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Word bank preview */}
@@ -135,7 +127,7 @@ export default function StatusPage() {
           <div className="card-title">WORD BANK ({wordBank.length})</div>
           {wordBank.slice(0, 20).map((w, i) => (
             <div key={i} className="word-row">
-              <span className="word-es">{w.word_es}</span>
+              <span className={`word-es${/[\u3040-\u30ff\u4e00-\u9faf]/.test(w.word_es) ? ' ja' : ''}`}>{w.word_es}</span>
               <span className="word-en">{w.word_en}</span>
             </div>
           ))}

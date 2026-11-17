@@ -137,6 +137,7 @@ export default function GamePage() {
   // --- Save helpers ---
   function buildSnapshot() {
     return {
+      language,
       levelIndex:   levelRef.current,
       solvedLocks:  [...solvedLocksRef.current],
       playerPos:    { ...playerRef.current },
@@ -147,6 +148,7 @@ export default function GamePage() {
   }
   function buildStatus() {
     return {
+      language,
       levelIndex:  levelRef.current,
       levelName:   levelDataRef.current?.name ?? '',
       score:       scoreRef.current,
@@ -242,7 +244,7 @@ export default function GamePage() {
     if (gridRef.current[newPos.row][newPos.col] === TILE.STAIRS && isExitOpen()) {
       const completedLevel = levelRef.current;
       const nextN = completedLevel + 1;
-      api.markLevelComplete(completedLevel).catch(e => console.warn('markLevelComplete', e));
+      api.markLevelComplete(completedLevel, language).catch(e => console.warn('markLevelComplete', e));
       scoreRef.current += 200;
       setScore(scoreRef.current);
       api.submitScore(completedLevel, scoreRef.current, Date.now() - startTimeRef.current)
@@ -386,7 +388,7 @@ export default function GamePage() {
     api.saveGame(null, {}).catch(e => console.warn('saveGame', e));
     // Refresh user data (word bank already submitted per-answer, just sync store)
     api.me().then(d => updateWordBank(d.user?.word_bank ?? [])).catch(() => {});
-    endGame({ level, language, score: finalScore, time_ms, wordsPassed: learnedWordsRef.current.length });
+    endGame({ won, level, language, score: finalScore, time_ms, wordsPassed: learnedWordsRef.current.length });
   }
 
   // --- D-pad: move exactly once per tap, delegates to shared applyMove ---
