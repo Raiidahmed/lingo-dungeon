@@ -990,7 +990,7 @@ export const LEVELS = [
       },
       {
         "id": "specter",
-        "col": 12,
+        "col": 11,
         "row": 8,
         "color": "#bbb",
         "label": "S",
@@ -1750,7 +1750,7 @@ export const LEVELS = [
       },
       {
         "id": "bellkeeper",
-        "col": 12,
+        "col": 11,
         "row": 8,
         "color": "#bbb",
         "label": "B",
@@ -2510,7 +2510,7 @@ export const LEVELS = [
       },
       {
         "id": "janitor",
-        "col": 12,
+        "col": 11,
         "row": 8,
         "color": "#bbb",
         "label": "J",
@@ -3270,7 +3270,7 @@ export const LEVELS = [
       },
       {
         "id": "intern",
-        "col": 12,
+        "col": 11,
         "row": 8,
         "color": "#bbb",
         "label": "I",
@@ -3654,7 +3654,7 @@ export const LEVELS = [
       },
       {
         "id": "advisor",
-        "col": 12,
+        "col": 11,
         "row": 8,
         "color": "#bbb",
         "label": "A",

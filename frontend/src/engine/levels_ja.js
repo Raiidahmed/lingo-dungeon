@@ -161,7 +161,7 @@ const LEVELS_JA = [
         'Words for your pocket: あめ means rain. いぬ means dog. うみ means sea.',
         'えき is station. おちゃ is tea. The tea is imaginary but still judging your posture.',
       ]),
-      npc('LANTERN INTERN', 'T', 6, 11, '#ffb7c5', [
+      npc('LANTERN INTERN', 'T', 5, 11, '#ffb7c5', [
         'The mice are not chests. They filed paperwork about it.',
         'Bump into each mouse and answer its practice question. Doors also quiz you because architecture has become ambitious.',
       ]),
