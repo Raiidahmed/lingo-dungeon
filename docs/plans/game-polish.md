@@ -1,6 +1,6 @@
 # Game polish pass (branch `game-polish`)
 
-Status: **built and tested on `game-polish`; not merged or deployed.** Review it locally first.
+Status: **deployed 2026-11-16.** Merged to `main` and pushed to `lingo_pkmn` (lingo-dungeon.com) and `lingo-dungeon` (raiidahmed.github.io/lingo-dungeon/).
 
 ## How to review
 
